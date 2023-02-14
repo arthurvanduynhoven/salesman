@@ -8,6 +8,7 @@ class SalesmanApplicationTests {
 
     @Test
     void contextLoads() {
+        assert true;
     }
 
 }

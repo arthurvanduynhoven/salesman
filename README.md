@@ -29,7 +29,7 @@ salesman’s goods and is looking to implement a system that will:
 
 ## Assumptions
 
-* String values are case-insensitive
+* String values are case-sensitive
 * Number values are consistent (aka: no mix & matching currencies or imperial/metric values and all same denominations)
 * Product attributes are defined up front and are static
 * Only one salesman is available for the company to purchase from
@@ -37,10 +37,9 @@ salesman’s goods and is looking to implement a system that will:
       the Product table including the salesman identifier
 * There are no Security/Sensitive Data concerns (all data/communication is trusted)
 * Audit/Versioning of products' changes are not required
-* Rule scores are generated during ingest of Products
-    * Rule additions/changes are out of scope of this POC due to potential performance bottlenecks
-* Certain environment performance considerations are ignored to simplify the POC (aka in-memory db and pre-generated
-  test content)
+* Product scores are generated during ingest of Products
+* Rule changes are out of scope of this POC
+* Input to commands are pre-validated - Validation of input out of scope of POC
 
 ## Diagram (UML)
 
@@ -54,37 +53,40 @@ classDiagram
         Product : +String productRef
         Product : +String name
         Product : +String color
-        Product : +Number cost
+        Product : +Number price
         Product : +Number quantity
         Product : +Boolean taxExempt
         Product : +create(product)
         Product : +read(id)
-        Product : +update(id, product)
+        Product : +update(product)
         Product : +delete(id)
-        Product : +list(filters)
-        Product : +purchases(threshold=50)
+        Product : +list()
+        Product : +listByThreshold(threshold=50)
+        Product : +summary(threshold=50)
     
     class Rule
         Rule : +Number id
-        Rule : +String rule
-        Rule : +Number score
+        Rule : +String expression
+        Rule : +Number weight
         Rule : +create(rule)
         Rule : +read(id)
-        Rule : +update(id, rule)
+        Rule : +update(rule)
         Rule : +delete(id)
-        Rule : +list(filters)
-        Rule : +calculate()
+        Rule : +list()
 
     class ProductRuleScore
+        ProductRuleScore : +Number id
         ProductRuleScore : +Number productId
         ProductRuleScore : +Number ruleId
         ProductRuleScore : +Number score
-        ProductRuleScore : +calculate(productId, ruleId)
+        ProductRuleScore : +calculate(rule, product)
+        ProductRuleScore : +list()
 
     class ProductScore
         ProductScore : +Number productId
         ProductScore : +Number score
-        ProductScore : +calculate(productId)
+        ProductScore : +calculate(productScore)
+        ProductScore : +list()
 
     ProductRuleScore "1..n" <..> "1" Rule
     ProductRuleScore "1..n" ..> "1" Product
@@ -93,24 +95,6 @@ classDiagram
 
 ```
 
-```shell
-class Operator
-        <<enumeration>> Operator
-        Operator : ==
-        Operator : <
-        Operator : >
-        Operator : <=
-        Operator : >=
-        Operator : !=
-
-class Condition
-        Condition : +Number ruleId
-        Condition : +String name
-        Condition : +Operator operator
-        Condition : +String value
-
-    Condition "1..n" <..> "1" Rule
-```
 ## Flows
 
 ```mermaid
@@ -155,59 +139,26 @@ sequenceDiagram
 
 ## Score Calculations
 
-During ingestion a score is created per rule and stored. This is done assuming rules get added, removed and updated
-during the life of the salesman.
+During product ingestion a score is created per rule and stored. This is done assuming rules get added, removed and
+updated during the life of the salesman.
 
-When calculating overall score for a given product it will sum up the individual rule scores and be stored on Product
-table (OR on the fly?).
+When calculating overall score for a given product it will sum up the individual rule scores and be stored on an
+associated product score table to keep the original product data untouched.
 
 When Company requests the products for purchase (based on score threshold) the backend service will rely on the sql
-query (Postgresql) built-in mathematical functions to calculate the totals and average prices of the qualified products.
+query built-in mathematical functions to calculate the totals and average prices of the qualified products based on
+score threshold.
 
 ```sql
-select 1 from product where Condition.name Condition.operator Condition.value limit 1;
-
-
-SELECT sum()
-```
-
-
-```sql
-CREATE TABLE IF NOT EXISTS product (
-    id serial PRIMARY KEY,
-    product_ref VARCHAR(255),
-    name VARCHAR(255),
-    color VARCHAR(64),
-    cost FLOAT,
-    quantity INT,
-    tax_exempt BOOLEAN,
-    score FLOAT
-);
-
-CREATE TABLE IF NOT EXISTS rule (
-    id serial PRIMARY KEY,
-    rule TEXT,
-    score FLOAT
-);
-
-CREATE TABLE IF NOT EXISTS condition (
-    rule_id INT,
-    name varchar(64),
-    operator varchar(2),
-    value varchar(255),
-    FOREIGN KEY (rule_id)
-        REFERENCES rule (id)
-);
-
-CREATE TABLE IF NOT EXISTS product_rule_score (
-    product_id INT,
-    rule_id INT,
-    score FLOAT,
-    FOREIGN KEY (product_id)
-        REFERENCES product (id),
-    FOREIGN KEY (rule_id)
-        REFERENCES rule (id)
-);
+SELECT 
+    COUNT(*) as uniqueProductCount,
+    SUM(p.price * p.quantity) as totalCost,
+    SUM(p.quantity) as totalQuantity,
+    AVG(p.price) as averageCost
+FROM Product as p
+INNER JOIN ProductScore as s
+    ON s.id = p.id
+WHERE s.score >= :score
 ```
 
 ## Performance Considerations
@@ -215,7 +166,25 @@ CREATE TABLE IF NOT EXISTS product_rule_score (
 * If expecting high load for data ingestion, will utilize queues (see ingestion flows above) to minimize wait times.
   **This was not implemented in the deliverable POC.**
 * If on the fly calculation of totals and average prices are not performant enough, can pre-calculate the results
-  based on various thresholds using CTE/Windows from within the database (postgresql) itself.
+  based on various thresholds using internal database functionality itself.
 * **Score Recalculation** is a concern here as it will need to go over every record for a given rule/condition set. We
   could further reduce this risk by storing a product passing the condition for each individual rule condition so
   recalculation is reduced to a subset of conditions instead of the entire rule and all of its associated conditions.
+* Further performance improvements could be mitigated by moving to a more dynamic search based implementation using
+* services like ElasticSearch
+
+# Usage
+
+To start the application you can use maven `mvn spring-boot:run`.
+
+Once the spring shell started you can type `help` for available commands.
+
+For example to get the summary view of matched products you can type `summary` which will return basic summary
+information.
+
+To list the purchasable products based on the rules and threshold you can use the command `purchases` which will
+return the list of all products based on the given (50 default) threshold.
+
+To list the current rules you can use `rules` to get the information.
+
+To exit the application you can use commands `exit` or `quit`.

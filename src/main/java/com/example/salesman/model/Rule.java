@@ -22,14 +22,14 @@ public class Rule {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private String rule;
+    private String expression;
     private Double weight;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "rule", orphanRemoval = true, cascade = CascadeType.ALL)
-    private Collection<ProductRuleScore> productRuleScores = new ArrayList<>();
+    private final Collection<ProductRuleScore> productRuleScores = new ArrayList<>();
 
     public List<Expression> getExpressions() {
-        return Arrays.stream(rule.split("&&")).map(
+        return Arrays.stream(expression.split("&&")).map(
                 r -> new SpelExpressionParser().parseExpression(r)
         ).toList();
     }
@@ -38,7 +38,7 @@ public class Rule {
     public String toString() {
         return "Rule{" +
                 "id=" + id +
-                ", rule='" + rule + '\'' +
+                ", expression='" + expression + '\'' +
                 ", weight=" + weight +
                 '}';
     }

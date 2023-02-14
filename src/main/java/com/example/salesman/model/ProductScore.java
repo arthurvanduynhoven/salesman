@@ -25,9 +25,9 @@ public class ProductScore {
     @MapsId
     private Product product;
 
-    @OneToMany(fetch = FetchType.EAGER, orphanRemoval = true, cascade = CascadeType.MERGE)
+    @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.MERGE)
     @JoinColumn(name = "product_id")
-    private Collection<ProductRuleScore> productRuleScores = new ArrayList<>();
+    private final Collection<ProductRuleScore> productRuleScores = new ArrayList<>();
 
     @Override
     public String toString() {

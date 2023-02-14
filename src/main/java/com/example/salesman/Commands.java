@@ -32,29 +32,33 @@ public class Commands {
             group = "Product Commands"
     )
     public void Generate(
-            @ShellOption(defaultValue = "100") Integer quantity
+            @ShellOption(defaultValue = "100") Integer quantity,
+            @ShellOption(defaultValue = "500") Long maxCost,
+            @ShellOption(defaultValue = "1000") Integer maxQuantity
     ) {
         Faker faker = new Faker();
         for (int i = 0; i < quantity; i++) {
+            // Create some test product data
             Product product = productService.create(
                     Product.builder()
                             .productRef(UUID.randomUUID().toString())
                             .name(faker.superhero().name())
                             .color(faker.color().name())
-                            .cost(faker.number().randomDouble(2, 0, 1000))
-                            .quantity(faker.number().numberBetween(0, 1000))
+                            .price(faker.number().randomDouble(2, 0, maxCost))
+                            .quantity(faker.number().numberBetween(0, maxQuantity))
                             .taxExempt(faker.bool().bool())
                             .build()
             );
 
+            // Create overall product score -- logic should be moved to database side for auto-creation
             ProductScore productScore = ProductScore.builder()
                     .product(product)
                     .id(product.getId())
                     .build();
 
-            // process each rule for product
+            // process each rule for product - could move to a db trigger
             ruleService.list().forEach(rule -> productRuleScoreService.calculate(rule, product));
-            // recalculate product total score
+            // recalculate product total score - could move to a db trigger
             System.out.println(productScoreService.calculate(productScore));
         }
     }
@@ -65,6 +69,7 @@ public class Commands {
             group = "Product Commands"
     )
     public void Products() {
+        // Add pagination query args
         productService.list().forEach(System.out::println);
     }
 
@@ -80,18 +85,21 @@ public class Commands {
     }
 
     @ShellMethod(
-            value = "Retrieve summary products to purchase based on threshold",
+            value = "Retrieve summary of products to purchase based on threshold",
             key = "summary",
             group = "Product Commands"
     )
     public void Summary(
             @ShellOption(defaultValue = "50.0") Double threshold
     ) {
+        // Make output more readable and do not allow scientific notation
         productService.summaryByThreshold(threshold).forEach(
-                s -> System.out.println("Summary{count=" + s.getCount() +
-                        ", totalCost=" + s.getTotalCost() +
-                        ", averageCost=" + s.getAverageCost() +
-                        "}"));
+                s -> System.out.println(
+                        "Summary{uniqueProductCount=" + s.getUniqueProductCount() +
+                                ", totalQuantity=" + s.getTotalQuantity() +
+                                ", totalCost=" + s.getTotalCost() +
+                                ", averageCost=" + s.getAverageCost() +
+                                "}"));
     }
 
     @ShellMethod(
@@ -109,10 +117,16 @@ public class Commands {
             group = "Rule Commands"
     )
     public void Rule(
-            String rule,
-            Double weight
+            String rule
     ) {
-        Rule ruleEntity = ruleService.create(Rule.builder().rule(rule).weight(weight).build());
+        // Add additional validation
+        String[] ruleParts = rule.split("->");
+        Rule ruleEntity = ruleService.create(
+                Rule.builder()
+                        .expression(ruleParts[0])
+                        .weight(Double.valueOf(ruleParts[1]))
+                        .build());
+        // Calculate all rule product scores and update overall product score
         productService.list().forEach(product -> {
             productRuleScoreService.calculate(ruleEntity, product);
             productScoreService.calculate(product.getProductScore());

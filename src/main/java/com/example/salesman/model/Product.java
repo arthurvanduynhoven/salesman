@@ -18,7 +18,7 @@ public class Product {
     private String productRef;
     private String name;
     private String color;
-    private Double cost;
+    private Double price;
     private Integer quantity;
     private Boolean taxExempt;
 
@@ -33,11 +33,10 @@ public class Product {
                 ", productRef='" + productRef + '\'' +
                 ", name='" + name + '\'' +
                 ", color='" + color + '\'' +
-                ", cost=" + cost +
+                ", price=" + price +
                 ", quantity=" + quantity +
                 ", taxExempt=" + taxExempt +
-//                ", score=" + score +
-                ", score=" + productScore.getScore() +
+                ", productScore=" + productScore.getScore() +
                 '}';
     }
 }
