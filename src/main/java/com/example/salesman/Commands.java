@@ -42,7 +42,7 @@ public class Commands {
                             .name(faker.superhero().name())
                             .color(faker.color().name())
                             .cost(faker.number().randomDouble(2, 0, 1000))
-                            .quantity(faker.number().numberBetween(0, 10000))
+                            .quantity(faker.number().numberBetween(0, 1000))
                             .taxExempt(faker.bool().bool())
                             .build()
             );
@@ -85,9 +85,13 @@ public class Commands {
             group = "Product Commands"
     )
     public void Summary(
-            @ShellOption(defaultValue = "1.0") Double threshold
+            @ShellOption(defaultValue = "50.0") Double threshold
     ) {
-        productService.summaryByThreshold(threshold).forEach(System.out::println);
+        productService.summaryByThreshold(threshold).forEach(
+                s -> System.out.println("Summary{count=" + s.getCount() +
+                        ", totalCost=" + s.getTotalCost() +
+                        ", averageCost=" + s.getAverageCost() +
+                        "}"));
     }
 
     @ShellMethod(

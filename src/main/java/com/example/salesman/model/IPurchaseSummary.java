@@ -1,7 +1,7 @@
 package com.example.salesman.model;
 
 public interface IPurchaseSummary {
-    Integer getTotal();
+    Long getCount();
 
     Double getTotalCost();
 
