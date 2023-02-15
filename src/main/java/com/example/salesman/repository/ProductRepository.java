@@ -1,6 +1,6 @@
 package com.example.salesman.repository;
 
-import com.example.salesman.model.IPurchaseSummary;
+import com.example.salesman.model.PurchaseSummary;
 import com.example.salesman.model.Product;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -22,7 +22,7 @@ public interface ProductRepository extends CrudRepository<Product, Long>, Paging
             "ProductScore as s ON s.id = p.id " +
             "WHERE s.score >= :score",
             nativeQuery = false)
-    List<IPurchaseSummary> countProductPricesByProductScore_ScoreGreaterThanEqual(Double score);
+    List<PurchaseSummary> countProductPricesByProductScore_ScoreGreaterThanEqual(Double score);
 
     List<Product> getProductsByProductScore_ScoreGreaterThanEqual(Double score);
 }

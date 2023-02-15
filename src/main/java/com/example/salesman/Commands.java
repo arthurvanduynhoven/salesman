@@ -31,7 +31,7 @@ public class Commands {
             key = "generate",
             group = "Product Commands"
     )
-    public void Generate(
+    public void GenerateProducts(
             @ShellOption(defaultValue = "100") Integer quantity,
             @ShellOption(defaultValue = "500") Long maxCost,
             @ShellOption(defaultValue = "1000") Integer maxQuantity

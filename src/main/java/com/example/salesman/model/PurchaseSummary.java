@@ -1,6 +1,6 @@
 package com.example.salesman.model;
 
-public interface IPurchaseSummary {
+public interface PurchaseSummary {
     Long getUniqueProductCount();
 
     Integer getTotalQuantity();
