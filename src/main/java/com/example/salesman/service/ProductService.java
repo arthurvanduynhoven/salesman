@@ -1,6 +1,6 @@
 package com.example.salesman.service;
 
-import com.example.salesman.model.IPurchaseSummary;
+import com.example.salesman.model.PurchaseSummary;
 import com.example.salesman.model.Product;
 import com.example.salesman.repository.ProductRepository;
 import lombok.AllArgsConstructor;
@@ -26,7 +26,7 @@ public class ProductService {
         return productRepository.getProductsByProductScore_ScoreGreaterThanEqual(threshold);
     }
 
-    public List<IPurchaseSummary> summaryByThreshold(Double threshold) {
+    public List<PurchaseSummary> summaryByThreshold(Double threshold) {
         return productRepository.countProductPricesByProductScore_ScoreGreaterThanEqual(threshold);
     }
 }
