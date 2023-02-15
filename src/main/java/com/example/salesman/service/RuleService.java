@@ -14,6 +14,10 @@ public class RuleService {
         return ruleRepository.save(rule);
     }
 
+    public void deleteById(Long id) {
+        ruleRepository.deleteById(id);
+    }
+
     // TODO: Add filter args from cli
     public Iterable<Rule> list() {
         return ruleRepository.findAll();

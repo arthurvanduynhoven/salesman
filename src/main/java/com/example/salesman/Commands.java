@@ -134,6 +134,22 @@ public class Commands {
     }
 
     @ShellMethod(
+            value = "Delete rule by id",
+            key = "delete-rule",
+            group = "Rule Commands"
+    )
+    public void RuleDelete(
+            Long id
+    ) {
+        ruleService.deleteById(id);
+        // Update overall product scores -- could move to a db trigger
+        productService.list().forEach(product -> {
+            productScoreService.calculate(product.getProductScore());
+        });
+        System.out.println("Deleted rule.");
+    }
+
+    @ShellMethod(
             value = "List Product Rule Scores",
             key = "rule-scores",
             group = "Score Commands"
